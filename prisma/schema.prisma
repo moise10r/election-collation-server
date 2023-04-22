@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model State {
+  id  Int @id @default(autoincrement())
+  state_id  Int @unique
+  name  String
+  lgas Lga[]
+  
+  @@index([state_id])
+}
+
+model Lga {
+  id Int @id  @default(autoincrement())
+  lga_id  Int
+  name  String
+  state State @relation(fields: [stateId], references: [state_id])
+  stateId Int
+  wards Ward[]
+  
+  @@index([lga_id])
+}
+
+model Ward {
+  id  Int @id @default(autoincrement())
+  ward_id Int
+  name  String
+  lga Lga @relation(fields: [lgaId], references: [id])
+  lgaId Int
+  
+  @@index([ward_id])
+}
+
+model PollingUnit {
+  id  String  @default(uuid())  @id
+  state String
+  lga String
+  ward  String
+  puNumber String
+  puName String
+  createdAt DateTime  @default(now())
+  elections ElectionPollingUnit[]
+  unitResults UnitResult[]
+
+  @@index([state, lga, ward, puNumber])
+}
+
+model Election {
+  id  String  @default(uuid()) @id
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  electionType  String
+  electionDate  DateTime
+  pollingUnits ElectionPollingUnit[]
+  unitResults UnitResult[]
+  politicalParties  ElectionPoliticalParty[]
+
+  @@index([electionType, electionDate])
+}
+
+model ElectionPollingUnit {
+  id  Int @id @default(autoincrement())
+  election  Election  @relation(fields: [electionId], references: [id])
+  electionId  String
+  pollingUnit PollingUnit @relation(fields: [pollingunitId], references: [id])
+  pollingunitId String
+  assignedAt  DateTime  @default(now())
+
+  @@index([electionId, pollingunitId])
+}
+
+model UnitResult {
+  id  String  @default(uuid())  @id
+  politicalParties  PoliticalPartyUnitResult[]
+  resultImage String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  pollingUnit PollingUnit @relation(fields: [pollingunitId], references: [id])
+  pollingunitId String
+  election Election @relation(fields: [electionId], references: [id])
+  electionId  String
+}
+
+model PoliticalParty {
+  id  Int @default(autoincrement()) @id
+  name  String
+  elections ElectionPoliticalParty[]
+  unitResults PoliticalPartyUnitResult[]
+  createdAt DateTime  @default(now())
+}
+
+model ElectionPoliticalParty {
+  id  Int @default(autoincrement()) @id
+  election  Election  @relation(fields: [electionId], references: [id])
+  electionId  String
+  politicalParty  PoliticalParty  @relation(fields: [politicalPartyId], references: [id])
+  politicalPartyId  Int
+  assignedAt  DateTime  @default(now())
+}
+
+model PoliticalPartyUnitResult {
+  id  Int @default(autoincrement()) @id
+  voteCount Int
+  assignedAt  DateTime  @default(now())
+  politicalParty  PoliticalParty  @relation(fields: [politicalPartyId], references: [id])
+  politicalPartyId  Int
+  unitResult  UnitResult  @relation(fields: [unitResultId], references: [id])
+  unitResultId  String
+}

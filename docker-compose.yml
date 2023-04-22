@@ -1,0 +1,57 @@
+version: '3.7'
+services:
+  collation_db:
+    container_name: collation_db
+    profiles:
+      - dev
+      - prod
+    image: postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - collation_data:/var/lib/postgresql/data
+    tty: true
+    ports:
+      - 5432:5432
+
+  collation_server:
+    container_name: collation_server
+    profiles:
+      - dev
+      - prod
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env
+    depends_on:
+      - collation_db
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+    volumes:
+      - ./:/app/
+      - ./node_modules:/app/node_modules
+    command: bash -c "npx prisma generate && npm run start:dev"
+  
+  db_seeder:
+    container_name: db_seeder
+    profiles:
+      - seed
+    build:
+      context: .
+      target: base
+    env_file:
+      - .env
+    depends_on:
+      - collation_db
+    ports:
+      - 8000:8000
+    # command: npm run seed
+
+volumes:
+  collation_data:
